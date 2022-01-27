@@ -37,5 +37,5 @@ class BaseService:
 
 
 class CategoryService(BaseService):
-    def __init__(self, repo: CategoryRepository = Depends()):
+    def __init__(self, repo: CategoryRepository = CategoryRepository()):
         super(CategoryService, self).__init__(repo)

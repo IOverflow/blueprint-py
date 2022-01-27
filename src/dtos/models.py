@@ -1,6 +1,6 @@
 from bson.objectid import ObjectId
 from pydantic import BaseModel, Field
-from typing import Optional
+from typing import Optional, Any
 
 
 class PagingModel(BaseModel):
@@ -53,6 +53,14 @@ class Category(Entity):
                 "description": "This is an awesome category"
             }
         }
+
+
+def Response(data=None, message="Success", status_code=200):
+    return {
+        "data": data,
+        "message": message,
+        "status_code": status_code
+    }
 
 
 class CategoryWriteDto(BaseModel):
