@@ -1,0 +1,1 @@
+# Add here tests that goes all the way down the request pipeline: from the endpoint to the db
