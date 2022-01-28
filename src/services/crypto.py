@@ -9,7 +9,7 @@ from fastapi import HTTPException, status, Depends
 from src.dtos.models import TokenData
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/token")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/account/token")
 
 
 class CryptoService:

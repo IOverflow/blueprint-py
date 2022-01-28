@@ -52,7 +52,9 @@ class BaseRepository:
 
     async def add(self, entity: Dict[str, Any]) -> str:
         created_obj = await self._collection.insert_one(entity)
-        return created_obj.inserted_id
+        if created_obj.inserted_id:
+            return str(created_obj.inserted_id)
+        return None
 
 
 class CategoryRepository(BaseRepository):
