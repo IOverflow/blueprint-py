@@ -32,3 +32,8 @@
   $ docker build -t  blueprint-image .
   $ docker run -d --name blueprint-container -p 8000:8000 blueprint-image
 ```
+
+## To create an user
+```bash
+  $ python console.py createuser --username <USERNAME> --password <PASSWORD>
+```
