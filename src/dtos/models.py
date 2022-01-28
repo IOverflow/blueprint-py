@@ -67,3 +67,33 @@ class CategoryWriteDto(BaseModel):
     name: str
     priority: int = 0
     description: Optional[str] = None
+
+
+# ============================================  USER ZONE ==========================================
+
+class Token(BaseModel):
+    """
+    JWT token representation to use in authentication system
+    """
+    access_token: str
+    token_type: str
+
+
+class TokenData(BaseModel):
+    username: Optional[str] = None
+
+
+class User(Entity):
+    username: str
+    hashed_password: str
+    email: Optional[str] = None
+    full_name: Optional[str] = None
+    disabled: Optional[bool] = None
+
+
+class UserReadDto(BaseModel):
+    username: str
+    email: Optional[str] = None
+    full_name: Optional[str] = None
+    disabled: Optional[bool] = None
+# ==================================================================================================
