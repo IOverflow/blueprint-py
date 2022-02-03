@@ -3,7 +3,6 @@ from fastapi.security import OAuth2PasswordRequestForm
 from src.dtos.models import Token
 from src.dependencies import crypto_service
 from src.services.crypto import CryptoService
-from decouple import config
 from datetime import timedelta
 
 router = APIRouter(prefix="/account", tags=["Account"])
