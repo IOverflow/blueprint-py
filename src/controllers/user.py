@@ -1,6 +1,6 @@
-from fastapi import APIRouter, Path, Security, status, Depends, Body, HTTPException
+from fastapi import APIRouter, Path, Security, status, Depends, Body
 from src.dtos.viewmodels import (UserResponse, UserAdminViewModelListResponse, UserAdminViewModel,
-                                 CreatedUserAdminViewModelResponse, CreatedUserAdminViewModel)
+                                 CreatedUserAdminViewModelResponse, CreatedUserAdminViewModel, UserReadDto)
 from src.dtos.models import User
 from src.services.crypto import RoleAuth
 from src.services.service_adapter import UserService, PagingModel
@@ -9,7 +9,7 @@ router = APIRouter(prefix="/user", tags=["Users"])
 service = UserService()
 
 
-@router.get('/{id}', response_model=UserResponse)
+@router.get('', response_model=UserResponse)
 def get_user(user: User = Security(RoleAuth(), scopes=["users:read"])):
     """
     Gets an user representation for displaying in a view. This
@@ -21,7 +21,8 @@ def get_user(user: User = Security(RoleAuth(), scopes=["users:read"])):
     :param user:
     :return:
     """
-    return UserResponse(data=user)
+    user_view_model = UserReadDto.from_orm(user)
+    return UserResponse(data=user_view_model)
 
 
 @router.get('/admin/{id}', response_model=UserAdminViewModel)

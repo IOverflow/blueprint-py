@@ -1,16 +1,15 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from src.dtos.models import Token
-from src.dependencies import crypto_service
 from src.services.crypto import CryptoService
 from datetime import timedelta
 
 router = APIRouter(prefix="/account", tags=["Account"])
+crypt_service = CryptoService()
 
 
 @router.post("/token", response_model=Token)
-async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(),
-                                 crypt_service: CryptoService = Depends(crypto_service)):
+async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends()):
     user = await crypt_service.authenticate_user(form_data.username, form_data.password)
     if not user:
         raise HTTPException(

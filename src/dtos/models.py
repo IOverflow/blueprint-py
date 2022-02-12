@@ -24,14 +24,18 @@ class PyObjectId(ObjectId):
         field_schema.update(type="string")
 
 
+class BaseConfig:
+    allow_population_by_field_name = True
+    arbitrary_types_allowed = True
+    json_encoders = {ObjectId: str}
+    orm_mode = True
+
+
 class Entity(BaseModel):
     id: PyObjectId = Field(default_factory=PyObjectId, alias="_id")
 
-    class Config:
-        allow_population_by_field_name = True
-        arbitrary_types_allowed = True
-        json_encoders = {ObjectId: str}
-        orm_mode = True
+    class Config(BaseConfig):
+        pass
 
 
 class Category(Entity):
@@ -105,6 +109,5 @@ SCOPES = {
     "users:read": "Permission to read users data",
     "users:delete": "Permission to delete users",
 }
-
 
 # ==================================================================================================
