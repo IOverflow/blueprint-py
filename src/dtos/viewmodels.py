@@ -28,6 +28,18 @@ class CreatedUserAdminViewModel(BaseModel):
         pass
 
 
+class CreateUserRequestModel(BaseModel):
+    username: str
+    email: Optional[str] = None
+    full_name: Optional[str] = None
+    disabled: Optional[bool] = None
+    scopes: List[str] = []
+    roles: List[Role] = []
+
+    class Config(BaseConfig):
+        pass
+
+
 # =================================  ==================  ============================== #
 
 
