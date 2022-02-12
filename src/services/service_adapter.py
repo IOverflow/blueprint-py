@@ -1,7 +1,7 @@
 from typing import Dict, Any, Optional, Union, List
 from fastapi import HTTPException, status, Depends
-from src.dataaccess.repository.repository import RepositoryProtocol, CategoryRepository
-from src.dtos.models import Entity, PagingModel
+from src.dataaccess.repository.repository import RepositoryProtocol, CategoryRepository, UserRepository
+from src.dtos.models import Entity, PagingModel, User
 
 
 class BaseService:
@@ -39,3 +39,8 @@ class BaseService:
 class CategoryService(BaseService):
     def __init__(self, repo: CategoryRepository = CategoryRepository()):
         super(CategoryService, self).__init__(repo)
+
+
+class UserService(BaseService):
+    def __init__(self, repo: UserRepository = UserRepository()):
+        super(UserService, self).__init__(repo)

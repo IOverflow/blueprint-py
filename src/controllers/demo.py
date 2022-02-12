@@ -1,8 +1,9 @@
 from fastapi import APIRouter, Depends, Path, HTTPException, status, Body
-from src.dtos.models import CategoryWriteDto, PagingModel, Response, User, Category
+from src.dtos.models import CategoryWriteDto, PagingModel, User, Category
 from bson.objectid import ObjectId
 import src.dependencies as deps
 from typing import List
+from src.dtos.viewmodels import Response
 
 router = APIRouter(prefix="/demo", tags=["Demo"])
 service = deps.demo_service()
@@ -31,11 +32,9 @@ async def get_category(id: str = Path(...)):
 # Only allow authorized users to create categories
 @router.post("/category")
 async def create(model: CategoryWriteDto = Body(...), user: User = Depends(crypt_service)):
-    print(user)
     if user.disabled:
         return Response(status_code=status.HTTP_401_UNAUTHORIZED, data=None, message="User is disabled")
     id_ = await service.add(model.dict(exclude_unset=True, by_alias=True))
-    print(type(id_))
     return id_
 
 

@@ -12,13 +12,13 @@ def main():
 
 
 async def create_user(username, password):
-    from src.dataaccess.repository.repository import UserRepository
+    from src.services.service_adapter import UserService
     from src.dtos.models import User
     from src.services.crypto import CryptoService
     hashed_password = CryptoService.get_password_hash(password)
     user = User(username=username, hashed_password=hashed_password)
-    repo = UserRepository()
-    new_id = await repo.add(user.dict(exclude_unset=True))
+    service = UserService()
+    new_id = await service.add(user.dict(exclude_unset=True))
     return new_id
 
 

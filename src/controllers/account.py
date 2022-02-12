@@ -19,8 +19,9 @@ async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(
             headers={"WWW-Authenticate": "Bearer"},
         )
 
+    user_requested_scopes = list(set(user.scopes).intersection(set(form_data.scopes)))
     access_token_expires = timedelta(minutes=60)
     access_token = CryptoService.create_access_token(
-        data={"sub": user.username}, expires_delta=access_token_expires
+        data={"sub": user.username, "scopes": user_requested_scopes}, expires_delta=access_token_expires
     )
     return {"access_token": access_token, "token_type": "bearer"}

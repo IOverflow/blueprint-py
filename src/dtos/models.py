@@ -1,6 +1,6 @@
 from bson.objectid import ObjectId
 from pydantic import BaseModel, Field
-from typing import Optional, Any
+from typing import Optional, List
 
 
 class PagingModel(BaseModel):
@@ -55,14 +55,6 @@ class Category(Entity):
         }
 
 
-def Response(data=None, message="Success", status_code=200):
-    return {
-        "data": data,
-        "message": message,
-        "status_code": status_code
-    }
-
-
 class CategoryWriteDto(BaseModel):
     name: str
     priority: int = 0
@@ -81,6 +73,11 @@ class Token(BaseModel):
 
 class TokenData(BaseModel):
     username: Optional[str] = None
+    scopes: List[str] = []
+
+
+class Role(BaseModel):
+    name: str
 
 
 class User(Entity):
@@ -89,11 +86,25 @@ class User(Entity):
     email: Optional[str] = None
     full_name: Optional[str] = None
     disabled: Optional[bool] = None
+    scopes: List[str] = []
+    roles: List[Role] = []
+
+    def is_in_role(self, role: str):
+        return any(role == r.name for r in self.roles)
+
+    def has_permission(self, permission: str):
+        return any(p == permission for p in self.scopes)
+
+    @property
+    def is_admin(self):
+        return self.is_in_role('Admin')
 
 
-class UserReadDto(BaseModel):
-    username: str
-    email: Optional[str] = None
-    full_name: Optional[str] = None
-    disabled: Optional[bool] = None
+SCOPES = {
+    "users:write": "Permission to edit and create an user",
+    "users:read": "Permission to read users data",
+    "users:delete": "Permission to delete users",
+}
+
+
 # ==================================================================================================
