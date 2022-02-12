@@ -17,9 +17,6 @@ def get_user(user: User = Security(RoleAuth(), scopes=["users:read"])):
     encrypted password, roles and permissions. This is meant to be used as an endpoint
     for querying user profile info. This endpoint only depends on the
     "users:read" scope, which must users should have.
-    :param id:
-    :param user:
-    :return:
     """
     user_view_model = UserReadDto.from_orm(user)
     return UserResponse(data=user_view_model)
@@ -34,9 +31,6 @@ async def get_user_as_admin(
     Gets an user representation for displaying in a view in an admin
     view. This representation only gets displayed by if the logged in
     user is an admin and has read access over users.
-    :param id:
-    :param user:
-    :return:
     """
     requested_user = await service.get(id)
     if requested_user is None:
@@ -53,9 +47,6 @@ async def list_users_as_admin(
     Gets the list of users with an extended field representation.
     This endpoint is meant for admins with read access over the
     users.
-    :param paging:
-    :param user:
-    :return:
     """
     users = await service.get(paging=paging)
     return UserAdminViewModelListResponse(data=users)
@@ -73,9 +64,6 @@ async def create_user_as_admin(
     for the user and sent with the new id of the user. This
     password must be saved because it would not be showed
     again, and it is not stored in plain text in the database.
-    :param model:
-    :param user:
-    :return:
     """
     if model.id is not None:
         return CreatedUserAdminViewModelResponse(
