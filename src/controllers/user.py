@@ -1,8 +1,10 @@
 from fastapi import APIRouter, Path, Security, status, Depends, Body
 from src.dtos.viewmodels import (UserResponse, UserAdminViewModelListResponse, UserAdminViewModel,
-                                 CreatedUserAdminViewModelResponse, CreatedUserAdminViewModel, UserReadDto, CreateUserRequestModel)
+                                 CreatedUserAdminViewModelResponse, CreatedUserAdminViewModel, UserReadDto,
+                                 CreateUserRequestModel, UserAdminViewModelResponse, UpdateUserRequestModel,
+                                 Response)
 from src.dtos.models import User
-from src.services.crypto import RoleAuth
+from src.services.crypto import RoleAuth, adminRole, anyRole
 from src.services.service_adapter import UserService, PagingModel
 
 router = APIRouter(prefix="/user", tags=["Users"])
@@ -10,7 +12,7 @@ service = UserService()
 
 
 @router.get('', response_model=UserResponse)
-def get_user(user: User = Security(RoleAuth(), scopes=["users:read"])):
+def get_user(user: User = Security(anyRole, scopes=["users:read"])):
     """
     Gets an user representation for displaying in a view. This
     data is striped from user sensitive information, such as
@@ -25,7 +27,7 @@ def get_user(user: User = Security(RoleAuth(), scopes=["users:read"])):
 @router.get('/admin/{id}', response_model=UserAdminViewModel)
 async def get_user_as_admin(
         id: str = Path(...),
-        user: User = Security(RoleAuth(['Admin']), scopes=["users:read"])
+        user: User = Security(adminRole, scopes=["users:read"])
 ):
     """
     Gets an user representation for displaying in a view in an admin
@@ -41,7 +43,7 @@ async def get_user_as_admin(
 @router.get('/admin', response_model=UserAdminViewModelListResponse)
 async def list_users_as_admin(
         paging: PagingModel = Depends(),
-        user: User = Security(RoleAuth(['Admin']), scopes=["users:read"])
+        user: User = Security(adminRole, scopes=["users:read"])
 ):
     """
     Gets the list of users with an extended field representation.
@@ -55,7 +57,7 @@ async def list_users_as_admin(
 @router.post('/admin', response_model=CreatedUserAdminViewModelResponse)
 async def create_user_as_admin(
         model: CreateUserRequestModel = Body(...),
-        user: User = Security(RoleAuth(['Admin']), scopes=["users:write"])
+        user: User = Security(adminRole, scopes=["users:write"])
 ):
     """
     Creates a new user in the system. The caller of this
@@ -74,3 +76,35 @@ async def create_user_as_admin(
         data=CreatedUserAdminViewModel(id=_id, password=password),
         status_code=status.HTTP_201_CREATED
     )
+
+
+@router.delete('/admin/{id}', response_model=Response)
+async def delete_user_as_admin(
+        id: str = Path(...),
+        user: User = Security(adminRole, scopes=['users:delete'])
+):
+    """
+    Deletes an user from the system. It requires "users:delete" permission
+    and an admin Role
+    """
+    if await service.delete(id):
+        return Response(message="Delete successfully", data=id, status_code=status.HTTP_202_ACCEPTED)
+
+    return Response(message="User could not been deleted", status=status.HTTP_400_BAD_REQUEST)
+
+
+@router.put('/admin/{id}', response_model=UserAdminViewModelResponse)
+async def update_user_as_admin(
+        id: str = Path(...),
+        model: UpdateUserRequestModel = Body(...),
+        user: User = Security(adminRole, scopes=['users:write'])
+):
+    """
+    Updates an user information. Requires an admin with "users:write"
+    permissions
+    """
+    if await service.update(id, model.dict(exclude_unset=True)):
+        new_user = await service.get(id)
+        return UserAdminViewModelResponse(data=new_user, status_code=status.HTTP_201_CREATED)
+
+    return UserAdminViewModelResponse(status_code=status.HTTP_400_BAD_REQUEST, message="Failed to update user")

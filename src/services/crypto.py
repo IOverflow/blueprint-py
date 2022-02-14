@@ -127,3 +127,7 @@ class RoleAuth(CryptoService):
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Not allowed user role.",
         )
+
+
+adminRole = RoleAuth(['Admin'])
+anyRole = RoleAuth()

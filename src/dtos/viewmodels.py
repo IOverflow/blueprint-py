@@ -40,6 +40,16 @@ class CreateUserRequestModel(BaseModel):
         pass
 
 
+class UpdateUserRequestModel(BaseModel):
+    username: Optional[str] = None
+    hashed_password: Optional[str] = None
+    email: Optional[str] = None
+    full_name: Optional[str] = None
+    disabled: Optional[bool] = None
+    scopes: Optional[List[str]] = None
+    roles: Optional[List[Role]] = None
+
+
 # =================================  ==================  ============================== #
 
 
