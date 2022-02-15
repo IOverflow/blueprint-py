@@ -24,7 +24,7 @@ def get_user(user: User = Security(anyRole, scopes=["users:read"])):
     return UserResponse(data=user_view_model)
 
 
-@router.get('/admin/{id}', response_model=UserAdminViewModel)
+@router.get('/admin/{id}', response_model=UserAdminViewModelResponse)
 async def get_user_as_admin(
         id: str = Path(...),
         user: User = Security(adminRole, scopes=["users:read"])
@@ -36,8 +36,8 @@ async def get_user_as_admin(
     """
     requested_user = await service.get(id)
     if requested_user is None:
-        return UserAdminViewModel(status_code=status.HTTP_404_NOT_FOUND, message="User not found")
-    return UserAdminViewModel(data=requested_user)
+        return UserAdminViewModelResponse(status_code=status.HTTP_404_NOT_FOUND, message="User not found")
+    return UserAdminViewModelResponse(data=requested_user)
 
 
 @router.get('/admin', response_model=UserAdminViewModelListResponse)
