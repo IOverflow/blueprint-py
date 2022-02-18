@@ -43,33 +43,51 @@ class CryptoService:
         return False
 
     @staticmethod
-    def create_access_token(data: dict, expires_delta: Optional[timedelta]):
+    def create_access_token(data: dict, expires_delta: Optional[timedelta], refresh=False):
         to_encode = data.copy()
         if expires_delta:
             expire = datetime.utcnow() + expires_delta
         else:
-            expire = datetime.utcnow() + timedelta(minutes=30)
+            expire = datetime.utcnow()
 
         # to_encode holds our claims. Add an expiration
         # time in there
         to_encode.update({'exp': expire})
-        encoded_jwt = jwt.encode(to_encode, config("SECRET_JWT_KEY"), algorithm=jwt.ALGORITHMS.HS256)
+        encoded_jwt = jwt.encode(
+            to_encode,
+            config("SECRET_JWT_KEY") if not refresh else config("SECRET_REFRESH_JWT_KEY"),
+            algorithm=jwt.ALGORITHMS.HS256
+        )
         return encoded_jwt
 
-    async def _get_current_user(self, token: str):
+    @staticmethod
+    def get_scopes_from_refresh(refresh_token):
+        payload = jwt.decode(
+            refresh_token,
+            config("SECRET_REFRESH_JWT_KEY"),
+            algorithms=[jwt.ALGORITHMS.HS256]
+        )
+        scopes = payload.get('scopes') or []
+        return scopes
+
+    async def get_current_user(self, token: str, refresh: bool = False):
         credentials_exception = HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Could not validate credentials",
             headers={"WWW-Authenticate": "Bearer"},
         )
         try:
-            payload = jwt.decode(token, config("SECRET_JWT_KEY"), algorithms=[jwt.ALGORITHMS.HS256])
+            payload = jwt.decode(
+                token,
+                config("SECRET_JWT_KEY") if not refresh else config("SECRET_REFRESH_JWT_KEY"),
+                algorithms=[jwt.ALGORITHMS.HS256]
+            )
             # username must come as subject
             username: str = payload.get('sub')
             if username is None:
                 raise credentials_exception
             token_data = TokenData(username=username)
-        except JWTError:
+        except JWTError as e:
             raise credentials_exception
 
         if (user := await self._user_repo.get_by_username(username=token_data.username)) is None:
@@ -77,7 +95,7 @@ class CryptoService:
         return user
 
     async def __call__(self, token: str = Depends(oauth2_scheme)):
-        return await self._get_current_user(token)
+        return await self.get_current_user(token)
 
 
 class RoleAuth(CryptoService):

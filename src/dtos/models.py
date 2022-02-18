@@ -1,6 +1,7 @@
 from bson.objectid import ObjectId
 from pydantic import BaseModel, Field
 from typing import Optional, List
+import datetime
 
 
 class PagingModel(BaseModel):
@@ -73,11 +74,18 @@ class Token(BaseModel):
     """
     access_token: str
     token_type: str
+    exp: datetime.datetime
+    refresh_token: Optional[str] = None
+    refresh_exp: Optional[datetime.datetime] = None
 
 
 class TokenData(BaseModel):
     username: Optional[str] = None
     scopes: List[str] = []
+
+
+class RefreshTokenForm(BaseModel):
+    refresh_token: str
 
 
 class Role(BaseModel):

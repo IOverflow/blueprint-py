@@ -9,7 +9,6 @@ api = FastAPI(docs_url="/")
 api.add_middleware(CORSMiddleware, allow_origins=origins, allow_credentials=True, allow_methods=['*'],
                    allow_headers=['*'])
 api.include_router(health.router)
-api.include_router(demo.router)
 api.include_router(account.router)
 api.include_router(user.router)
 

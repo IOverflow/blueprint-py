@@ -1,8 +1,8 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Body
 from fastapi.security import OAuth2PasswordRequestForm
-from src.dtos.models import Token
+from src.dtos.models import Token, RefreshTokenForm
 from src.services.crypto import CryptoService
-from datetime import timedelta
+from datetime import timedelta, datetime
 
 router = APIRouter(prefix="/account", tags=["Account"])
 crypt_service = CryptoService()
@@ -20,7 +20,38 @@ async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(
 
     user_requested_scopes = list(set(user.scopes).intersection(set(form_data.scopes)))
     access_token_expires = timedelta(minutes=60)
+    refresh_token_expires = timedelta(days=31)
     access_token = CryptoService.create_access_token(
-        data={"sub": user.username, "scopes": user_requested_scopes}, expires_delta=access_token_expires
+        data={"sub": user.username, "scopes": user_requested_scopes},
+        expires_delta=access_token_expires
     )
-    return {"access_token": access_token, "token_type": "bearer"}
+    refresh_token = CryptoService.create_access_token(
+        data={"sub": user.username, "scopes": user_requested_scopes},
+        expires_delta=refresh_token_expires,
+        refresh=True
+    )
+    return {
+        "access_token": access_token,
+        "token_type": "bearer",
+        "exp": datetime.utcnow() + access_token_expires,
+        "refresh_token": refresh_token,
+        "refresh_exp": datetime.utcnow() + refresh_token_expires,
+    }
+
+
+@router.post("/refresh_token", response_model=Token)
+async def refresh_access_token(refresh_token_form: RefreshTokenForm = Body(...)):
+    user = await crypt_service.get_current_user(refresh_token_form.refresh_token, refresh=True)
+    scopes = CryptoService.get_scopes_from_refresh(refresh_token_form.refresh_token)
+    access_token_expires = timedelta(minutes=60)
+
+    new_access_token = crypt_service.create_access_token(
+        data={"sub": user.username, "scopes": scopes},
+        expires_delta=access_token_expires
+    )
+
+    return {
+        "access_token": new_access_token,
+        "token_type": "bearer",
+        "exp": datetime.utcnow() + access_token_expires,
+    }
