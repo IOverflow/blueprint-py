@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from src.controllers import health, demo, account, user
+from src.controllers import health, account, user
 from src.config import config
 from fastapi.middleware.cors import CORSMiddleware
 

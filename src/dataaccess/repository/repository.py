@@ -57,12 +57,6 @@ class BaseRepository:
         return None
 
 
-class CategoryRepository(BaseRepository):
-
-    def __init__(self, database=db, schema=Category, table_name="categories"):
-        super().__init__(table_name, schema, database)
-
-
 # ===========================================    USER REPOSITORY   =================================
 class UserRepository(BaseRepository):
     def __init__(self, table_name="users", schema=User, database=db):

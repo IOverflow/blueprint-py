@@ -36,11 +36,6 @@ class BaseService:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Object {id} not found")
 
 
-class CategoryService(BaseService):
-    def __init__(self, repo: CategoryRepository = CategoryRepository()):
-        super(CategoryService, self).__init__(repo)
-
-
 class UserService(BaseService):
     def __init__(self, repo: UserRepository = UserRepository()):
         super(UserService, self).__init__(repo)

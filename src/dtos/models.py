@@ -39,33 +39,6 @@ class Entity(BaseModel):
         pass
 
 
-class Category(Entity):
-    """
-    This is a testing model so we can run a sample project
-    """
-    name: str
-    priority: int = 0
-    description: Optional[str] = None
-
-    class Config(Entity.Config):
-        # Define an extra configuration
-        # for the sake of example in the Swagger
-        schema_extra = {
-            "example": {
-                "id": "507f1f77bcf86cd799439011",
-                "name": "My super category",
-                "priority": 10,
-                "description": "This is an awesome category"
-            }
-        }
-
-
-class CategoryWriteDto(BaseModel):
-    name: str
-    priority: int = 0
-    description: Optional[str] = None
-
-
 # ============================================  USER ZONE ==========================================
 
 class Token(BaseModel):
