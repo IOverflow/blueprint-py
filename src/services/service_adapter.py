@@ -1,7 +1,8 @@
 from typing import Dict, Any, Optional, Union, List
-from fastapi import HTTPException, status, Depends
-from src.dataaccess.repository.repository import RepositoryProtocol, CategoryRepository, UserRepository
-from src.dtos.models import Entity, PagingModel, User
+from fastapi import HTTPException, status
+from src.dataaccess.repository.repository import RepositoryProtocol, UserRepository, NomenclatureRepository
+from src.dtos.models import Entity, PagingModel
+from src.inmutables import NomenclatureType
 
 
 class BaseService:
@@ -39,3 +40,11 @@ class BaseService:
 class UserService(BaseService):
     def __init__(self, repo: UserRepository = UserRepository()):
         super(UserService, self).__init__(repo)
+
+
+class NomenclaturesService(BaseService):
+    def __init__(self, repo: NomenclatureRepository = NomenclatureRepository()):
+        super(NomenclaturesService, self).__init__(repo)
+
+    async def get_nomenclatures_by_type(self, type_: NomenclatureType):
+        return await self._repo.get_nomenclatures(str(type_))

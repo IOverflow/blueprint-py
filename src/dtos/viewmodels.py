@@ -1,6 +1,7 @@
 from pydantic import BaseModel, Field
 from typing import Optional, List
-from .models import Role, PyObjectId, BaseConfig
+from .models import Role, PyObjectId, BaseConfig, Nomenclature
+from src.inmutables import NomenclatureType
 
 
 # =================================   USERS VIEW MODELS  ============================= #
@@ -81,4 +82,16 @@ class UserAdminViewModelListResponse(Response):
 
 class CreatedUserAdminViewModelResponse(Response):
     data: Optional[CreatedUserAdminViewModel] = None
+
+
+class NomenclatureResponseViewModel(Response):
+    data: Optional[Nomenclature] = None
+
+
+class NomenclaturesResponseViewModel(Response):
+    data: List[Nomenclature] = []
+
+
+class NomenclatureTypesViewModel(Response):
+    data: List[NomenclatureType] = []
 # =================================================================================== #

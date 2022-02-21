@@ -2,8 +2,9 @@ from typing import Protocol, Dict, Any, Optional
 from abc import abstractmethod
 from motor.motor_asyncio import AsyncIOMotorCollection
 from src.dataaccess.database import db
-from src.dtos.models import Category, PagingModel, User
+from src.dtos.models import PagingModel, User, Nomenclature
 from bson.objectid import ObjectId
+from src.inmutables import NomenclatureType
 
 
 class RepositoryProtocol(Protocol):
@@ -33,7 +34,7 @@ class BaseRepository:
         self._collection: AsyncIOMotorCollection = database[table_name]
         self._schema = schema
 
-    async def get(self, id: str) -> Optional[Category]:
+    async def get(self, id: str):
         if (obj := await self._collection.find_one({"_id": ObjectId(id)})) is not None:
             return self._schema(**obj)
         return None
@@ -50,7 +51,7 @@ class BaseRepository:
         result = await self._collection.update_one({"_id": ObjectId(id)}, {"$set": entity})
         return result.modified_count == 1
 
-    async def add(self, entity: Dict[str, Any]) -> str:
+    async def add(self, entity: Dict[str, Any]) -> Optional[str]:
         created_obj = await self._collection.insert_one(entity)
         if created_obj.inserted_id:
             return str(created_obj.inserted_id)
@@ -68,4 +69,20 @@ class UserRepository(BaseRepository):
 
         return None
 
+
 # ==================================================================================================
+
+
+# ===========================================   NOMENCLATURE REPOSITORY  ==========================
+
+class NomenclatureRepository(BaseRepository):
+    def __init__(self, table_name="nomenclature", schema=Nomenclature, database=db):
+        super(NomenclatureRepository, self).__init__(table_name, schema, database)
+
+    async def get_nomenclatures(self, nomenclature: str):
+        if (nomenclatures := await self._collection.find({'type': nomenclature})) is not None:
+            return list(Nomenclature(**n) for n in nomenclatures)
+
+        return None
+
+# =================================================================================================

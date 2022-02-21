@@ -1,6 +1,7 @@
 from bson.objectid import ObjectId
 from pydantic import BaseModel, Field
 from typing import Optional, List
+from src.inmutables import NomenclatureType
 import datetime
 
 
@@ -89,6 +90,22 @@ SCOPES = {
     "users:write": "Permission to edit and create an user",
     "users:read": "Permission to read users data",
     "users:delete": "Permission to delete users",
+    "nomenclature:read": "Permission to read data about nomenclatures",
+    "nomenclature:write": "Permission to create and edit nomenclatures",
+    "nomenclature:delete": "Permission to delete nomenclatures"
 }
+
+
+# ==================================================================================================
+
+
+# =============================  Nomenclatures  ====================================================
+
+class Nomenclature(Entity):
+    Name: str
+    pattern: str
+    description: str
+    level: int
+    type: NomenclatureType
 
 # ==================================================================================================
