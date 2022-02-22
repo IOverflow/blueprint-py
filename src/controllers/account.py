@@ -1,8 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Body
 from fastapi.security import OAuth2PasswordRequestForm
-from src.dtos.models import Token, RefreshTokenForm
+from src.dtos.models import Token, RefreshTokenForm, SCOPES
 from src.services.crypto import CryptoService
 from datetime import timedelta, datetime
+from typing import List
 
 router = APIRouter(prefix="/account", tags=["Account"])
 crypt_service = CryptoService()
@@ -55,3 +56,14 @@ async def refresh_access_token(refresh_token_form: RefreshTokenForm = Body(...))
         "token_type": "bearer",
         "exp": datetime.utcnow() + access_token_expires,
     }
+
+
+@router.get('/permissions', response_model=List[str])
+def get_available_permissions():
+    """
+    List the available permissions in the system an user can ask for when
+    signing in.
+    System handles login and assign each user the intersection between its
+    assigned permissions and the asked permissions.
+    """
+    return SCOPES.keys()

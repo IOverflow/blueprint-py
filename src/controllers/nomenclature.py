@@ -25,7 +25,7 @@ async def get_all_nomenclatures(
 
 
 @router.get('/types', response_model=NomenclatureTypesViewModel)
-async def get_all_nomenclature_types():
+def get_all_nomenclature_types():
     """
     This endpoints does not enforce a specific role or
     user permission, neither required an authenticated
