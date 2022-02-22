@@ -66,4 +66,4 @@ def get_available_permissions():
     System handles login and assign each user the intersection between its
     assigned permissions and the asked permissions.
     """
-    return SCOPES.keys()
+    return list(SCOPES.keys())
