@@ -108,4 +108,7 @@ class Nomenclature(Entity):
     level: int
     type: NomenclatureType
 
+    class Config(BaseConfig):
+        pass
+
 # ==================================================================================================

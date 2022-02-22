@@ -47,4 +47,4 @@ class NomenclaturesService(BaseService):
         super(NomenclaturesService, self).__init__(repo)
 
     async def get_nomenclatures_by_type(self, type_: NomenclatureType):
-        return await self._repo.get_nomenclatures(str(type_))
+        return await self._repo.get_nomenclatures(type_.value)

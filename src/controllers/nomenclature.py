@@ -1,12 +1,12 @@
 from fastapi import APIRouter, Path, Security, Body, Query, Depends, status
 from src.services.service_adapter import PagingModel, NomenclaturesService
 from src.dtos.viewmodels import (NomenclaturesResponseViewModel, NomenclatureTypesViewModel,
-                                 NomenclatureResponseViewModel, Response)
+                                 NomenclatureResponseViewModel, Response, NomenclatureForm)
 from src.dtos.models import User
 from src.services.crypto import adminRole, anyRole
 from src.inmutables import NomenclatureType
 
-router = APIRouter(prefix='nomenclature', tags=['Nomenclature'])
+router = APIRouter(prefix='/nomenclature', tags=['Nomenclature'])
 service = NomenclaturesService()
 
 
@@ -54,6 +54,21 @@ async def get_nomenclature_by_id(
     return NomenclatureTypesViewModel(data=nomenclature)
 
 
+@router.get('/type/{nomenclature_type}', response_model=NomenclaturesResponseViewModel)
+async def get_nomenclatures_by_type(
+        user: User = Security(anyRole, scopes=['nomenclature:read']),
+        nomenclature_type: NomenclatureType = Path(...)
+):
+    """
+    Gets all nomenclatures that belongs to a specific type.
+    This is useful for populating select boxes on entities
+    that depends on a given nomenclature.
+    Requires 'nomenclature:read' permission.
+    """
+    nomenclatures = await service.get_nomenclatures_by_type(nomenclature_type)
+    return NomenclaturesResponseViewModel(data=nomenclatures)
+
+
 @router.delete('/{id}', response_model=Response)
 async def delete_nomenclature(
         user: User = Security(adminRole, scopes=['nomenclature:delete']),
@@ -69,16 +84,16 @@ async def delete_nomenclature(
     return Response(message="Nomenclature could not been deleted", status=status.HTTP_400_BAD_REQUEST)
 
 
-@router.get('/{nomenclature_type}', response_model=NomenclaturesResponseViewModel)
-async def get_nomenclatures_by_type(
-        user: User = Security(adminRole, scopes=['nomenclature:read']),
-        nomenclature_type: NomenclatureType = Path(...)
+@router.post('', response_model=NomenclatureResponseViewModel)
+async def create_nomenclature(
+        user: User = Security(adminRole, scopes=['nomenclature:write']),
+        model: NomenclatureForm = Body(...)
 ):
     """
-    Gets all nomenclatures that belongs to a specific type.
-    This is useful for populating select boxes on entities
-    that depends on a given nomenclature.
-    Requires 'nomenclature:read' permission and Admin role.
+    Creates a new nomenclature and returns the new object.
+    Requires Admin role and 'nomenclature:write' permission.
     """
-    nomenclatures = await service.get_nomenclatures_by_type(nomenclature_type)
-    return NomenclaturesResponseViewModel(data=nomenclatures)
+    data = model.dict()
+    _id = await service.add(data)
+
+    return NomenclatureResponseViewModel(data=await service.get(id=_id))

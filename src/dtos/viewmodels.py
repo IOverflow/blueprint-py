@@ -53,6 +53,16 @@ class UpdateUserRequestModel(BaseModel):
 
 # =================================  ==================  ============================== #
 
+# =================================  NOMENCLATURES VIEW MODELS  ======================= #
+class NomenclatureForm(BaseModel):
+    Name: str
+    pattern: str
+    description: str
+    level: int
+    type: NomenclatureType
+
+# ===================================================================================== #
+
 
 # ===============================    RESPONSES    =================================== #
 class Response(BaseModel):

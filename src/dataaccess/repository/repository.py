@@ -4,7 +4,6 @@ from motor.motor_asyncio import AsyncIOMotorCollection
 from src.dataaccess.database import db
 from src.dtos.models import PagingModel, User, Nomenclature
 from bson.objectid import ObjectId
-from src.inmutables import NomenclatureType
 
 
 class RepositoryProtocol(Protocol):
@@ -77,10 +76,10 @@ class UserRepository(BaseRepository):
 
 class NomenclatureRepository(BaseRepository):
     def __init__(self, table_name="nomenclature", schema=Nomenclature, database=db):
-        super(NomenclatureRepository, self).__init__(table_name, schema, database)
+        super().__init__(table_name, schema, database)
 
     async def get_nomenclatures(self, nomenclature: str):
-        if (nomenclatures := await self._collection.find({'type': nomenclature})) is not None:
+        if (nomenclatures := await self._collection.find({'type': nomenclature}).to_list(length=1000)) is not None:
             return list(Nomenclature(**n) for n in nomenclatures)
 
         return None
