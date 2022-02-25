@@ -139,6 +139,8 @@ class RoleAuth(CryptoService):
 
         # Check the roles
         if not self.allowed_roles or any(role.name in self.allowed_roles for role in user.roles):
+            # Add to user only the scopes it has been granted permission for
+            user.scopes = token_scopes
             return user
 
         raise HTTPException(
