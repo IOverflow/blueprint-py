@@ -18,7 +18,7 @@ def get_user(user: User = Security(anyRole, scopes=["users:read"])):
     data is striped from user sensitive information, such as
     encrypted password, roles and permissions. This is meant to be used as an endpoint
     for querying user profile info. This endpoint only depends on the
-    "users:read" scope, which must users should have.
+    "users:read" scope, which most users should have.
     """
     user_view_model = UserReadDto.from_orm(user)
     return UserResponse(data=user_view_model)

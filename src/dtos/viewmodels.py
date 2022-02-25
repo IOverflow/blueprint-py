@@ -7,6 +7,7 @@ from src.inmutables import NomenclatureType
 # =================================   USERS VIEW MODELS  ============================= #
 class UserReadDto(BaseModel):
     username: str
+    scopes: List[str]
     id: Optional[PyObjectId] = Field(default=None)
     email: Optional[str] = None
     full_name: Optional[str] = None
