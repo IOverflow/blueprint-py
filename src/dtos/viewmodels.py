@@ -8,6 +8,7 @@ from src.inmutables import NomenclatureType
 class UserReadDto(BaseModel):
     username: str
     scopes: List[str]
+    roles: List[Role]
     id: Optional[PyObjectId] = Field(default=None)
     email: Optional[str] = None
     full_name: Optional[str] = None
@@ -62,6 +63,21 @@ class NomenclatureForm(BaseModel):
     level: int
     type: NomenclatureType
 
+
+class NomenclatureViewModel(BaseModel):
+    id: PyObjectId
+    Name: str
+    has_level: bool = True
+    has_pattern: bool = True
+    type: NomenclatureType
+    pattern: Optional[str] = None
+    description: Optional[str] = None
+    level: Optional[int] = None
+
+    class Config(BaseConfig):
+        pass
+
+
 # ===================================================================================== #
 
 
@@ -96,11 +112,11 @@ class CreatedUserAdminViewModelResponse(Response):
 
 
 class NomenclatureResponseViewModel(Response):
-    data: Optional[Nomenclature] = None
+    data: Optional[NomenclatureViewModel] = None
 
 
 class NomenclaturesResponseViewModel(Response):
-    data: List[Nomenclature] = []
+    data: List[NomenclatureViewModel] = []
 
 
 class NomenclatureTypesViewModel(Response):

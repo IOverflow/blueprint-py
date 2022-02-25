@@ -1,6 +1,7 @@
 from bson.objectid import ObjectId
 from pydantic import BaseModel, Field
-from typing import Optional, List
+from typing import Optional, List, Union, Any, Dict
+
 from src.inmutables import NomenclatureType
 import datetime
 
@@ -107,6 +108,14 @@ class Nomenclature(Entity):
     description: str
     level: int
     type: NomenclatureType
+
+    @property
+    def has_level(self):
+        return self.type == NomenclatureType.type_check_item
+
+    @property
+    def has_pattern(self):
+        return self.type == NomenclatureType.data_type
 
     class Config(BaseConfig):
         pass
