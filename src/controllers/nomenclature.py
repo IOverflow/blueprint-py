@@ -97,3 +97,19 @@ async def create_nomenclature(
     _id = await service.add(data)
 
     return NomenclatureResponseViewModel(data=await service.get(id=_id))
+
+
+@router.put('/{id}', response_model=NomenclatureResponseViewModel)
+async def update_nomenclature(
+        user: User = Security(adminRole, scopes=['nomenclature:write']),
+        id: str = Path(...),
+        model: NomenclatureForm = Body(...)
+):
+    """
+    Updates the data collected in model to the Nomenclature
+    represented by id. Requires Admin role and nomenclature:write permission
+    """
+    data = model.dict(exclude_unset=True)
+    if await service.update(id, data):
+        new_nomenclature = await service.get(id=id)
+        return NomenclatureResponseViewModel(status_code=status.HTTP_201_CREATED, data=new_nomenclature)

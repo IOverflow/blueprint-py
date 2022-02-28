@@ -58,10 +58,10 @@ class UpdateUserRequestModel(BaseModel):
 # =================================  NOMENCLATURES VIEW MODELS  ======================= #
 class NomenclatureForm(BaseModel):
     Name: str
-    pattern: str
-    description: str
-    level: int
     type: NomenclatureType
+    pattern: Optional[str] = None
+    description: Optional[str] = None
+    level: Optional[int] = None
 
 
 class NomenclatureViewModel(BaseModel):
