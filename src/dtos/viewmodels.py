@@ -120,5 +120,5 @@ class NomenclaturesResponseViewModel(Response):
 
 
 class NomenclatureTypesViewModel(Response):
-    data: List[NomenclatureType] = []
+    data: List[dict] = []
 # =================================================================================== #
