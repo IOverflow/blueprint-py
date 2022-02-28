@@ -1,4 +1,6 @@
-from fastapi import APIRouter, Path, Security, Body, Query, Depends, status
+from re import finditer
+
+from fastapi import APIRouter, Path, Security, Body, Depends, status
 from src.services.service_adapter import PagingModel, NomenclaturesService
 from src.dtos.viewmodels import (NomenclaturesResponseViewModel, NomenclatureTypesViewModel,
                                  NomenclatureResponseViewModel, Response, NomenclatureForm)
@@ -8,6 +10,11 @@ from src.inmutables import NomenclatureType
 
 router = APIRouter(prefix='/nomenclature', tags=['Nomenclature'])
 service = NomenclaturesService()
+
+
+def camel_case_split(identifier):
+    matches = finditer('.+?(?:(?<=[a-z])(?=[A-Z])|(?<=[A-Z])(?=[A-Z][a-z])|$)', identifier)
+    return [m.group(0) for m in matches]
 
 
 @router.get('', response_model=NomenclaturesResponseViewModel)
@@ -34,7 +41,8 @@ def get_all_nomenclature_types():
     nomenclature types available (namely, all values of the
     NomenclatureType Enum)
     """
-    return NomenclatureTypesViewModel(data=list(e.value for e in NomenclatureType))
+    return NomenclatureTypesViewModel(
+        data=list({"value": e.value, "label": " ".join(camel_case_split(e.value))} for e in NomenclatureType))
 
 
 @router.get('/{id}', response_model=NomenclatureResponseViewModel)
