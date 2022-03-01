@@ -93,7 +93,10 @@ SCOPES = {
     "users:delete": "Permission to delete users",
     "nomenclature:read": "Permission to read data about nomenclatures",
     "nomenclature:write": "Permission to create and edit nomenclatures",
-    "nomenclature:delete": "Permission to delete nomenclatures"
+    "nomenclature:delete": "Permission to delete nomenclatures",
+    "publication-project:read": "Permission to read publication projects",
+    "publication-project:write": "Permission to write changes to publication projects",
+    "publication-project:commit": "Permission to make changes as commits over publication projects"
 }
 
 
