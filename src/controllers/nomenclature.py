@@ -42,7 +42,11 @@ def get_all_nomenclature_types():
     NomenclatureType Enum)
     """
     return NomenclatureTypesViewModel(
-        data=list({"value": e.value, "label": " ".join(camel_case_split(e.value))} for e in NomenclatureType))
+        data=list({"value": e.value,
+                   "label": " ".join(camel_case_split(e.value)),
+                   "has_level": e == NomenclatureType.type_check_item,
+                   "has_pattern": e == NomenclatureType.data_type
+                   } for e in NomenclatureType))
 
 
 @router.get('/{id}', response_model=NomenclatureResponseViewModel)
