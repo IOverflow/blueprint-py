@@ -2,7 +2,9 @@ from re import finditer
 from typing import List, Optional
 
 from fastapi import APIRouter, Path, Security, Body, Depends, status
-from src.services.service_adapter import PagingModel, NomenclaturesService, get_filters
+
+from src.dependencies import get_filters
+from src.services.service_adapter import PagingModel, NomenclaturesService
 from src.dtos.viewmodels import (Response, NomenclatureForm, Page, NomenclatureViewModel,
                                  NomenclatureTypeViewModel)
 from src.dtos.models import User, Filter

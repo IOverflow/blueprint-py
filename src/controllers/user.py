@@ -1,13 +1,15 @@
 from typing import List, Optional
 
 from fastapi import APIRouter, Path, Security, status, Depends, Body
+
+from src.dependencies import get_filters
 from src.dtos.viewmodels import (UserAdminViewModel,
                                  CreatedUserAdminViewModel, UserReadDto,
                                  CreateUserRequestModel, UpdateUserRequestModel,
                                  Response, Page)
 from src.dtos.models import User, Filter
 from src.services.crypto import RoleAuth, adminRole, anyRole
-from src.services.service_adapter import UserService, PagingModel, get_filters
+from src.services.service_adapter import UserService, PagingModel
 
 router = APIRouter(prefix="/user", tags=["Users"])
 service = UserService()
