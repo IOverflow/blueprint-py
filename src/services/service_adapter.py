@@ -36,6 +36,9 @@ class BaseService:
 
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Object {id} not found")
 
+    async def count(self, filter: dict = {}):
+        return await self._repo.count(filter)
+
 
 class UserService(BaseService):
     def __init__(self, repo: UserRepository = UserRepository()):

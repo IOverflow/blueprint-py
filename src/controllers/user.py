@@ -1,8 +1,10 @@
+from typing import List
+
 from fastapi import APIRouter, Path, Security, status, Depends, Body
-from src.dtos.viewmodels import (UserResponse, UserAdminViewModelListResponse, UserAdminViewModel,
-                                 CreatedUserAdminViewModelResponse, CreatedUserAdminViewModel, UserReadDto,
-                                 CreateUserRequestModel, UserAdminViewModelResponse, UpdateUserRequestModel,
-                                 Response)
+from src.dtos.viewmodels import (UserAdminViewModel,
+                                 CreatedUserAdminViewModel, UserReadDto,
+                                 CreateUserRequestModel, UpdateUserRequestModel,
+                                 Response, Page)
 from src.dtos.models import User
 from src.services.crypto import RoleAuth, adminRole, anyRole
 from src.services.service_adapter import UserService, PagingModel
@@ -11,7 +13,7 @@ router = APIRouter(prefix="/user", tags=["Users"])
 service = UserService()
 
 
-@router.get('', response_model=UserResponse)
+@router.get('', response_model=Response[UserReadDto])
 def get_user(user: User = Security(anyRole, scopes=["users:read"])):
     """
     Gets an user representation for displaying in a view. This
@@ -21,10 +23,10 @@ def get_user(user: User = Security(anyRole, scopes=["users:read"])):
     "users:read" scope, which most users should have.
     """
     user_view_model = UserReadDto.from_orm(user)
-    return UserResponse(data=user_view_model)
+    return Response(data=user_view_model)
 
 
-@router.get('/admin/{id}', response_model=UserAdminViewModelResponse)
+@router.get('/admin/{id}', response_model=Response[UserAdminViewModel])
 async def get_user_as_admin(
         id: str = Path(...),
         user: User = Security(adminRole, scopes=["users:read"])
@@ -36,11 +38,11 @@ async def get_user_as_admin(
     """
     requested_user = await service.get(id)
     if requested_user is None:
-        return UserAdminViewModelResponse(status_code=status.HTTP_404_NOT_FOUND, message="User not found")
-    return UserAdminViewModelResponse(data=requested_user)
+        return Response(status_code=status.HTTP_404_NOT_FOUND, message="User not found")
+    return Response(data=requested_user)
 
 
-@router.get('/admin', response_model=UserAdminViewModelListResponse)
+@router.get('/admin', response_model=Response[Page[UserAdminViewModel]])
 async def list_users_as_admin(
         paging: PagingModel = Depends(),
         user: User = Security(adminRole, scopes=["users:read"])
@@ -51,10 +53,11 @@ async def list_users_as_admin(
     users.
     """
     users = await service.get(paging=paging)
-    return UserAdminViewModelListResponse(data=users)
+    total = await service.count()
+    return Response(data=Page(items=users, total=total, records=len(users)))
 
 
-@router.post('/admin', response_model=CreatedUserAdminViewModelResponse)
+@router.post('/admin', response_model=Response[CreatedUserAdminViewModel])
 async def create_user_as_admin(
         model: CreateUserRequestModel = Body(...),
         user: User = Security(adminRole, scopes=["users:write"])
@@ -72,13 +75,13 @@ async def create_user_as_admin(
     password = RoleAuth.generate_strong_password()
     data['hashed_password'] = RoleAuth.get_password_hash(password)
     _id = await service.add(data)
-    return CreatedUserAdminViewModelResponse(
+    return Response(
         data=CreatedUserAdminViewModel(id=_id, password=password),
         status_code=status.HTTP_201_CREATED
     )
 
 
-@router.delete('/admin/{id}', response_model=Response)
+@router.delete('/admin/{id}', response_model=Response[str])
 async def delete_user_as_admin(
         id: str = Path(...),
         user: User = Security(adminRole, scopes=['users:delete'])
@@ -93,7 +96,7 @@ async def delete_user_as_admin(
     return Response(message="User could not been deleted", status=status.HTTP_400_BAD_REQUEST)
 
 
-@router.put('/admin/{id}', response_model=UserAdminViewModelResponse)
+@router.put('/admin/{id}', response_model=Response[UserAdminViewModel])
 async def update_user_as_admin(
         id: str = Path(...),
         model: UpdateUserRequestModel = Body(...),
@@ -105,6 +108,6 @@ async def update_user_as_admin(
     """
     if await service.update(id, model.dict(exclude_unset=True)):
         new_user = await service.get(id)
-        return UserAdminViewModelResponse(data=new_user, status_code=status.HTTP_201_CREATED)
+        return Response(data=new_user, status_code=status.HTTP_201_CREATED)
 
-    return UserAdminViewModelResponse(status_code=status.HTTP_400_BAD_REQUEST, message="Failed to update user")
+    return Response(status_code=status.HTTP_400_BAD_REQUEST, message="Failed to update user")

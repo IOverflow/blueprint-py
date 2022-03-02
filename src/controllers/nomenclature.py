@@ -1,9 +1,10 @@
 from re import finditer
+from typing import List
 
 from fastapi import APIRouter, Path, Security, Body, Depends, status
 from src.services.service_adapter import PagingModel, NomenclaturesService
-from src.dtos.viewmodels import (NomenclaturesResponseViewModel, NomenclatureTypesViewModel,
-                                 NomenclatureResponseViewModel, Response, NomenclatureForm)
+from src.dtos.viewmodels import (Response, NomenclatureForm, Page, NomenclatureViewModel,
+                                 NomenclatureTypeViewModel)
 from src.dtos.models import User
 from src.services.crypto import adminRole, anyRole
 from src.inmutables import NomenclatureType
@@ -17,7 +18,7 @@ def camel_case_split(identifier):
     return [m.group(0) for m in matches]
 
 
-@router.get('', response_model=NomenclaturesResponseViewModel)
+@router.get('', response_model=Response[Page[NomenclatureViewModel]])
 async def get_all_nomenclatures(
         user: User = Security(adminRole, scopes=['nomenclature:read']),
         paging: PagingModel = Depends()
@@ -28,10 +29,11 @@ async def get_all_nomenclatures(
     permission
     """
     nomenclatures = await service.get(paging=paging)
-    return NomenclaturesResponseViewModel(data=nomenclatures)
+    total = await service.count()
+    return Response(data=Page(items=nomenclatures, total=total, records=len(nomenclatures)))
 
 
-@router.get('/types', response_model=NomenclatureTypesViewModel)
+@router.get('/types', response_model=Response[List[NomenclatureTypeViewModel]])
 def get_all_nomenclature_types():
     """
     This endpoints does not enforce a specific role or
@@ -41,7 +43,7 @@ def get_all_nomenclature_types():
     nomenclature types available (namely, all values of the
     NomenclatureType Enum)
     """
-    return NomenclatureTypesViewModel(
+    return Response(
         data=list({"value": e.value,
                    "label": " ".join(camel_case_split(e.value)),
                    "has_level": e == NomenclatureType.type_check_item,
@@ -49,7 +51,7 @@ def get_all_nomenclature_types():
                    } for e in NomenclatureType))
 
 
-@router.get('/{id}', response_model=NomenclatureResponseViewModel)
+@router.get('/{id}', response_model=Response[NomenclatureViewModel])
 async def get_nomenclature_by_id(
         user: User = Security(adminRole, scopes=['nomenclature:read']),
         id: str = Path(...)
@@ -61,12 +63,12 @@ async def get_nomenclature_by_id(
     """
     nomenclature = await service.get(id=id)
     if nomenclature is None:
-        return NomenclatureResponseViewModel(status_code=status.HTTP_404_NOT_FOUND, message="Nomenclature not found")
+        return Response(status_code=status.HTTP_404_NOT_FOUND, message="Nomenclature not found")
 
-    return NomenclatureTypesViewModel(data=nomenclature)
+    return Response(data=nomenclature)
 
 
-@router.get('/type/{nomenclature_type}', response_model=NomenclaturesResponseViewModel)
+@router.get('/type/{nomenclature_type}', response_model=Response[Page[NomenclatureViewModel]])
 async def get_nomenclatures_by_type(
         user: User = Security(anyRole, scopes=['nomenclature:read']),
         nomenclature_type: NomenclatureType = Path(...)
@@ -78,10 +80,13 @@ async def get_nomenclatures_by_type(
     Requires 'nomenclature:read' permission.
     """
     nomenclatures = await service.get_nomenclatures_by_type(nomenclature_type)
-    return NomenclaturesResponseViewModel(data=nomenclatures)
+    total = await service.count({'type': nomenclature_type})
+    return Response(
+        data=Page(items=nomenclatures, records=len(nomenclatures), total=total)
+    )
 
 
-@router.delete('/{id}', response_model=Response)
+@router.delete('/{id}', response_model=Response[str])
 async def delete_nomenclature(
         user: User = Security(adminRole, scopes=['nomenclature:delete']),
         id: str = Path(...)
@@ -96,7 +101,7 @@ async def delete_nomenclature(
     return Response(message="Nomenclature could not been deleted", status=status.HTTP_400_BAD_REQUEST)
 
 
-@router.post('', response_model=NomenclatureResponseViewModel)
+@router.post('', response_model=Response[NomenclatureViewModel])
 async def create_nomenclature(
         user: User = Security(adminRole, scopes=['nomenclature:write']),
         model: NomenclatureForm = Body(...)
@@ -108,10 +113,10 @@ async def create_nomenclature(
     data = model.dict()
     _id = await service.add(data)
 
-    return NomenclatureResponseViewModel(data=await service.get(id=_id))
+    return Response(data=await service.get(id=_id))
 
 
-@router.put('/{id}', response_model=NomenclatureResponseViewModel)
+@router.put('/{id}', response_model=Response[NomenclatureViewModel])
 async def update_nomenclature(
         user: User = Security(adminRole, scopes=['nomenclature:write']),
         id: str = Path(...),
@@ -124,4 +129,4 @@ async def update_nomenclature(
     data = model.dict(exclude_unset=True)
     if await service.update(id, data):
         new_nomenclature = await service.get(id=id)
-        return NomenclatureResponseViewModel(status_code=status.HTTP_201_CREATED, data=new_nomenclature)
+        return Response(status_code=status.HTTP_201_CREATED, data=new_nomenclature)

@@ -1,5 +1,8 @@
 from pydantic import BaseModel, Field
-from typing import Optional, List
+from typing import Optional, List, TypeVar, Generic, Sequence
+
+from pydantic.generics import GenericModel
+
 from .models import Role, PyObjectId, BaseConfig, Nomenclature
 from src.inmutables import NomenclatureType
 
@@ -65,7 +68,7 @@ class NomenclatureForm(BaseModel):
 
 
 class NomenclatureViewModel(BaseModel):
-    id: PyObjectId
+    id: PyObjectId = Field(alias='_id')
     Name: str
     has_level: bool = True
     has_pattern: bool = True
@@ -82,8 +85,12 @@ class NomenclatureViewModel(BaseModel):
 
 
 # ===============================    RESPONSES    =================================== #
-class Response(BaseModel):
-    data: Optional[object] = None
+
+T = TypeVar('T')
+
+
+class Response(GenericModel, Generic[T]):
+    data: Optional[T] = None
     message: str = "Success"
     status_code: int = 200
 
@@ -91,34 +98,21 @@ class Response(BaseModel):
         pass
 
 
-class UserResponse(Response):
-    data: Optional[UserReadDto] = None
+class Page(GenericModel, Generic[T]):
+    items: Sequence[T] = []
+    records: int = 0
+    total: int = 0
+
+    class Config:
+        orm_mode = True
 
 
-class UserListResponse(Response):
-    data: List[UserReadDto] = []
+class NomenclatureTypeViewModel(BaseModel):
+    label: str
+    value: str
+    has_level: bool
+    has_pattern: bool
 
-
-class UserAdminViewModelResponse(Response):
-    data: Optional[UserAdminViewModel] = None
-
-
-class UserAdminViewModelListResponse(Response):
-    data: List[UserAdminViewModel] = []
-
-
-class CreatedUserAdminViewModelResponse(Response):
-    data: Optional[CreatedUserAdminViewModel] = None
-
-
-class NomenclatureResponseViewModel(Response):
-    data: Optional[NomenclatureViewModel] = None
-
-
-class NomenclaturesResponseViewModel(Response):
-    data: List[NomenclatureViewModel] = []
-
-
-class NomenclatureTypesViewModel(Response):
-    data: List[dict] = []
+    class Config:
+        orm_mode = True
 # =================================================================================== #

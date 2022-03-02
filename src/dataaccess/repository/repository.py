@@ -27,6 +27,10 @@ class RepositoryProtocol(Protocol):
     async def update(self, id: str, entity: Dict[str, Any]) -> bool:
         raise NotImplementedError
 
+    @abstractmethod
+    async def count(self):
+        raise NotImplementedError
+
 
 class BaseRepository:
     def __init__(self, table_name, schema: type, database=db):
@@ -55,6 +59,9 @@ class BaseRepository:
         if created_obj.inserted_id:
             return str(created_obj.inserted_id)
         return None
+
+    async def count(self, filter: dict = {}):
+        return await self._collection.count_documents(filter)
 
 
 # ===========================================    USER REPOSITORY   =================================
