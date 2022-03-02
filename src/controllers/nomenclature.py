@@ -1,11 +1,11 @@
 from re import finditer
-from typing import List
+from typing import List, Optional
 
 from fastapi import APIRouter, Path, Security, Body, Depends, status
-from src.services.service_adapter import PagingModel, NomenclaturesService
+from src.services.service_adapter import PagingModel, NomenclaturesService, get_filters
 from src.dtos.viewmodels import (Response, NomenclatureForm, Page, NomenclatureViewModel,
                                  NomenclatureTypeViewModel)
-from src.dtos.models import User
+from src.dtos.models import User, Filter
 from src.services.crypto import adminRole, anyRole
 from src.inmutables import NomenclatureType
 
@@ -21,15 +21,16 @@ def camel_case_split(identifier):
 @router.get('', response_model=Response[Page[NomenclatureViewModel]])
 async def get_all_nomenclatures(
         user: User = Security(adminRole, scopes=['nomenclature:read']),
-        paging: PagingModel = Depends()
+        paging: PagingModel = Depends(),
+        filters: Optional[List[Filter]] = Depends(get_filters)
 ):
     """
     Returns all nomenclatures defined on the system.
     This endpoint requires the Admin role and 'nomenclature:read'
     permission
     """
-    nomenclatures = await service.get(paging=paging)
-    total = await service.count()
+    nomenclatures = await service.get(paging=paging, filters=filters)
+    total = await service.count(filters)
     return Response(data=Page(items=nomenclatures, total=total, records=len(nomenclatures)))
 
 
@@ -80,7 +81,7 @@ async def get_nomenclatures_by_type(
     Requires 'nomenclature:read' permission.
     """
     nomenclatures = await service.get_nomenclatures_by_type(nomenclature_type)
-    total = await service.count({'type': nomenclature_type})
+    total = await service.count([Filter(field='type', value='nomenclature_type')])
     return Response(
         data=Page(items=nomenclatures, records=len(nomenclatures), total=total)
     )

@@ -12,7 +12,7 @@ class UserReadDto(BaseModel):
     username: str
     scopes: List[str]
     roles: List[Role]
-    id: Optional[PyObjectId] = Field(default=None)
+    id: Optional[PyObjectId] = Field(default=None, alias='_id')
     email: Optional[str] = None
     full_name: Optional[str] = None
     disabled: Optional[bool] = None

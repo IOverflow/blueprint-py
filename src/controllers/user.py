@@ -1,13 +1,13 @@
-from typing import List
+from typing import List, Optional
 
 from fastapi import APIRouter, Path, Security, status, Depends, Body
 from src.dtos.viewmodels import (UserAdminViewModel,
                                  CreatedUserAdminViewModel, UserReadDto,
                                  CreateUserRequestModel, UpdateUserRequestModel,
                                  Response, Page)
-from src.dtos.models import User
+from src.dtos.models import User, Filter
 from src.services.crypto import RoleAuth, adminRole, anyRole
-from src.services.service_adapter import UserService, PagingModel
+from src.services.service_adapter import UserService, PagingModel, get_filters
 
 router = APIRouter(prefix="/user", tags=["Users"])
 service = UserService()
@@ -45,6 +45,7 @@ async def get_user_as_admin(
 @router.get('/admin', response_model=Response[Page[UserAdminViewModel]])
 async def list_users_as_admin(
         paging: PagingModel = Depends(),
+        filters: Optional[List[Filter]] = Depends(get_filters),
         user: User = Security(adminRole, scopes=["users:read"])
 ):
     """
@@ -52,7 +53,7 @@ async def list_users_as_admin(
     This endpoint is meant for admins with read access over the
     users.
     """
-    users = await service.get(paging=paging)
+    users = await service.get(paging=paging, filters=filters)
     total = await service.count()
     return Response(data=Page(items=users, total=total, records=len(users)))
 

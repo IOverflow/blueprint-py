@@ -11,6 +11,11 @@ class PagingModel(BaseModel):
     skip: int = 0
 
 
+class Filter(BaseModel):
+    field: str
+    value: Union[str, List[str]]
+
+
 class PyObjectId(ObjectId):
     @classmethod
     def __get_validators__(cls):

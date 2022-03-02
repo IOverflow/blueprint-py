@@ -20,7 +20,7 @@ class RepositoryProtocol(Protocol):
         raise NotImplementedError
 
     @abstractmethod
-    async def get_all(self, paging: PagingModel):
+    async def get_all(self, paging: PagingModel, filter: dict = {}):
         raise NotImplementedError
 
     @abstractmethod
@@ -28,7 +28,7 @@ class RepositoryProtocol(Protocol):
         raise NotImplementedError
 
     @abstractmethod
-    async def count(self):
+    async def count(self, filters: dict = {}):
         raise NotImplementedError
 
 
@@ -46,8 +46,8 @@ class BaseRepository:
         delete_result = await self._collection.delete_one({'_id': ObjectId(id)})
         return delete_result.deleted_count == 1
 
-    async def get_all(self, paging: PagingModel):
-        objects = await self._collection.find(limit=paging.limit, skip=paging.skip).to_list(paging.limit)
+    async def get_all(self, paging: PagingModel, filters: dict = {}):
+        objects = await self._collection.find(filters, limit=paging.limit, skip=paging.skip).to_list(paging.limit)
         return list(map(lambda d: self._schema(**d), objects))
 
     async def update(self, id: str, entity: Dict[str, Any]) -> bool:
@@ -60,8 +60,8 @@ class BaseRepository:
             return str(created_obj.inserted_id)
         return None
 
-    async def count(self, filter: dict = {}):
-        return await self._collection.count_documents(filter)
+    async def count(self, filters: dict = {}):
+        return await self._collection.count_documents(filters)
 
 
 # ===========================================    USER REPOSITORY   =================================
