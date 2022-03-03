@@ -4,9 +4,9 @@ from fastapi import APIRouter, Path, Security, status, Depends, Body
 
 from src.dependencies import get_filters
 from src.dtos.viewmodels import (UserAdminViewModel,
-                                 CreatedUserAdminViewModel, UserReadDto,
+                                 CreatedUserAdminViewModel,
                                  CreateUserRequestModel, UpdateUserRequestModel,
-                                 Response, Page)
+                                 Response, Page, LoggedUser)
 from src.dtos.models import User, Filter
 from src.services.crypto import RoleAuth, adminRole, anyRole
 from src.services.service_adapter import UserService, PagingModel
@@ -15,8 +15,8 @@ router = APIRouter(prefix="/user", tags=["Users"])
 service = UserService()
 
 
-@router.get('', response_model=Response[UserReadDto])
-def get_user(user: User = Security(anyRole, scopes=["users:read"])):
+@router.get('', response_model=Response[LoggedUser])
+def get_user(user: LoggedUser = Security(anyRole, scopes=["users:read"])):
     """
     Gets an user representation for displaying in a view. This
     data is striped from user sensitive information, such as
@@ -24,14 +24,13 @@ def get_user(user: User = Security(anyRole, scopes=["users:read"])):
     for querying user profile info. This endpoint only depends on the
     "users:read" scope, which most users should have.
     """
-    user_view_model = UserReadDto.from_orm(user)
-    return Response(data=user_view_model)
+    return Response(data=user)
 
 
 @router.get('/admin/{id}', response_model=Response[UserAdminViewModel])
 async def get_user_as_admin(
         id: str = Path(...),
-        user: User = Security(adminRole, scopes=["users:read"])
+        user: LoggedUser = Security(adminRole, scopes=["users:read"])
 ):
     """
     Gets an user representation for displaying in a view in an admin
@@ -48,7 +47,7 @@ async def get_user_as_admin(
 async def list_users_as_admin(
         paging: PagingModel = Depends(),
         filters: Optional[List[Filter]] = Depends(get_filters),
-        user: User = Security(adminRole, scopes=["users:read"])
+        user: LoggedUser = Security(adminRole, scopes=["users:read"])
 ):
     """
     Gets the list of users with an extended field representation.
@@ -63,7 +62,7 @@ async def list_users_as_admin(
 @router.post('/admin', response_model=Response[CreatedUserAdminViewModel])
 async def create_user_as_admin(
         model: CreateUserRequestModel = Body(...),
-        user: User = Security(adminRole, scopes=["users:write"])
+        user: LoggedUser = Security(adminRole, scopes=["users:write"])
 ):
     """
     Creates a new user in the system. The caller of this
@@ -87,7 +86,7 @@ async def create_user_as_admin(
 @router.delete('/admin/{id}', response_model=Response[str])
 async def delete_user_as_admin(
         id: str = Path(...),
-        user: User = Security(adminRole, scopes=['users:delete'])
+        user: LoggedUser = Security(adminRole, scopes=['users:delete'])
 ):
     """
     Deletes an user from the system. It requires "users:delete" permission
@@ -103,7 +102,7 @@ async def delete_user_as_admin(
 async def update_user_as_admin(
         id: str = Path(...),
         model: UpdateUserRequestModel = Body(...),
-        user: User = Security(adminRole, scopes=['users:write'])
+        user: LoggedUser = Security(adminRole, scopes=['users:write'])
 ):
     """
     Updates an user information. Requires an admin with "users:write"

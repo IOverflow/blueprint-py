@@ -23,11 +23,23 @@ async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(
     access_token_expires = timedelta(minutes=60)
     refresh_token_expires = timedelta(days=31)
     access_token = CryptoService.create_access_token(
-        data={"sub": user.username, "scopes": user_requested_scopes},
+        data={
+            "sub": user.username,
+            "scopes": user_requested_scopes,
+            "roles": list(role.name for role in user.roles),
+            "full_name": user.full_name,
+            "email": user.email
+        },
         expires_delta=access_token_expires
     )
     refresh_token = CryptoService.create_access_token(
-        data={"sub": user.username, "scopes": user_requested_scopes},
+        data={
+            "sub": user.username,
+            "scopes": user_requested_scopes,
+            "roles": list(role.name for role in user.roles),
+            "full_name": user.full_name,
+            "email": user.email
+        },
         expires_delta=refresh_token_expires,
         refresh=True
     )
@@ -47,7 +59,13 @@ async def refresh_access_token(refresh_token_form: RefreshTokenForm = Body(...))
     access_token_expires = timedelta(minutes=60)
 
     new_access_token = crypt_service.create_access_token(
-        data={"sub": user.username, "scopes": scopes},
+        data={
+            "sub": user.username,
+            "scopes": scopes,
+            "roles": list(role.name for role in user.roles),
+            "full_name": user.full_name,
+            "email": user.email
+        },
         expires_delta=access_token_expires
     )
 

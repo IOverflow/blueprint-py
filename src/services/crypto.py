@@ -11,6 +11,8 @@ from pydantic import ValidationError
 from random import sample, randint
 import string
 
+from src.dtos.viewmodels import LoggedUser
+
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/account/token", scopes=SCOPES)
 
@@ -94,9 +96,6 @@ class CryptoService:
             raise credentials_exception
         return user
 
-    async def __call__(self, token: str = Depends(oauth2_scheme)):
-        return await self.get_current_user(token)
-
 
 class RoleAuth(CryptoService):
     def __init__(self, allowed_roles: List[str] = None):
@@ -122,15 +121,15 @@ class RoleAuth(CryptoService):
             if username is None:
                 raise credentials_exception
             token_scopes = payload.get('scopes', [])
-            token_data = TokenData(username=username, scopes=token_scopes)
+            token_roles = payload.get('roles', [])
+            token_full_name = payload.get('full_name')
+            token_email = payload.get('email')
+            token_language = payload.get('lang', 'en')
         except (JWTError, ValidationError):
             raise credentials_exception
 
-        if (user := await self._user_repo.get_by_username(username=token_data.username)) is None:
-            raise credentials_exception
-
         for scope in security_scopes.scopes:
-            if scope not in token_data.scopes:
+            if scope not in token_scopes:
                 raise HTTPException(
                     status_code=status.HTTP_401_UNAUTHORIZED,
                     detail="Not enough permissions",
@@ -138,10 +137,15 @@ class RoleAuth(CryptoService):
                 )
 
         # Check the roles
-        if not self.allowed_roles or any(role.name in self.allowed_roles for role in user.roles):
+        if not self.allowed_roles or any(role in self.allowed_roles for role in token_roles):
             # Add to user only the scopes it has been granted permission for
-            user.scopes = token_scopes
-            return user
+            return LoggedUser(
+                username=username,
+                roles=token_roles,
+                scopes=token_scopes,
+                full_name=token_full_name,
+                email=token_email
+            )
 
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

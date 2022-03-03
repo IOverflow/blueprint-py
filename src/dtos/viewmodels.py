@@ -3,25 +3,24 @@ from typing import Optional, List, TypeVar, Generic, Sequence
 
 from pydantic.generics import GenericModel
 
-from .models import Role, PyObjectId, BaseConfig, Nomenclature
+from .models import Role, PyObjectId, BaseConfig
 from src.inmutables import NomenclatureType
 
 
 # =================================   USERS VIEW MODELS  ============================= #
-class UserReadDto(BaseModel):
+class LoggedUser(BaseModel):
     username: str
     scopes: List[str]
-    roles: List[Role]
-    id: Optional[PyObjectId] = Field(default=None, alias='_id')
+    roles: List[str]
     email: Optional[str] = None
     full_name: Optional[str] = None
-    disabled: Optional[bool] = None
 
     class Config(BaseConfig):
         pass
 
 
-class UserAdminViewModel(UserReadDto):
+class UserAdminViewModel(LoggedUser):
+    id: PyObjectId = Field(default_factory=PyObjectId, alias='_id')
     scopes: List[str] = []
     roles: List[Role] = []
 
