@@ -4,8 +4,9 @@ from src.dtos.models import Token, RefreshTokenForm, SCOPES
 from src.services.crypto import CryptoService
 from datetime import timedelta, datetime
 from typing import List
+from .routers import ApiController
 
-router = APIRouter(prefix="/account", tags=["Account"])
+router = ApiController(prefix="/account", tags=["Account"])
 crypt_service = CryptoService()
 
 

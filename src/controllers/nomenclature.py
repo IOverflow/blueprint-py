@@ -10,8 +10,9 @@ from src.dtos.viewmodels import (Response, NomenclatureForm, Page, NomenclatureV
 from src.dtos.models import User, Filter
 from src.services.crypto import adminRole, anyRole
 from src.inmutables import NomenclatureType
+from .routers import ApiController
 
-router = APIRouter(prefix='/nomenclature', tags=['Nomenclature'])
+router = ApiController(prefix='/nomenclature', tags=['Nomenclature'])
 service = NomenclaturesService()
 
 

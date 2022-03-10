@@ -10,8 +10,9 @@ from src.dtos.viewmodels import (UserAdminViewModel,
 from src.dtos.models import User, Filter
 from src.services.crypto import RoleAuth, adminRole, anyRole
 from src.services.service_adapter import UserService, PagingModel
+from .routers import ApiController
 
-router = APIRouter(prefix="/user", tags=["Users"])
+router = ApiController(prefix="/user", tags=["Users"])
 service = UserService()
 
 
