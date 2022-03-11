@@ -26,4 +26,4 @@ else
 fi
 
 # Launch server
-uvicorn src.main:api --host 0.0.0.0 --port 8000
+uvicorn src.main:api --host 0.0.0.0 --port 8000 --reload
