@@ -1,4 +1,4 @@
-from fastapi import APIRouter, status
+from fastapi import status
 from .routers import ApiController
 
 router = ApiController(prefix='/health', tags=['health'])

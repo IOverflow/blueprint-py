@@ -1,7 +1,7 @@
 from re import finditer
 from typing import List, Optional
 
-from fastapi import APIRouter, Path, Security, Body, Depends, status
+from fastapi import Path, Security, Body, Depends, status
 
 from src.dependencies import get_filters
 from src.services.service_adapter import PagingModel, NomenclaturesService
@@ -102,7 +102,7 @@ async def delete_nomenclature(
     if await service.delete(id):
         return Response(message="Delete successfully", data=id, status_code=status.HTTP_202_ACCEPTED)
 
-    return Response(message="Nomenclature could not been deleted", status=status.HTTP_400_BAD_REQUEST)
+    return Response(message="Nomenclature could not been deleted", status_code=status.HTTP_400_BAD_REQUEST)
 
 
 @router.post('', response_model=Response[NomenclatureViewModel])

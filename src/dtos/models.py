@@ -1,7 +1,6 @@
 from bson.objectid import ObjectId
 from pydantic import BaseModel, Field
-from typing import Optional, List, Union, Any, Dict
-
+from typing import Optional, List, Union
 from src.inmutables import NomenclatureType
 import datetime
 
