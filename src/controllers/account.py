@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Body
+from fastapi import Depends, HTTPException, status, Body
 from fastapi.security import OAuth2PasswordRequestForm
 from src.dtos.models import Token, RefreshTokenForm, SCOPES
 from src.services.crypto import CryptoService
@@ -7,12 +7,11 @@ from typing import List
 from .routers import ApiController
 
 router = ApiController(prefix="/account", tags=["Account"])
-crypt_service = CryptoService()
 
 
 @router.post("/token", response_model=Token)
 async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends()):
-    user = await crypt_service.authenticate_user(form_data.username, form_data.password)
+    user = await CryptoService.authenticate_user(form_data.username, form_data.password)
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -55,11 +54,11 @@ async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(
 
 @router.post("/refresh_token", response_model=Token)
 async def refresh_access_token(refresh_token_form: RefreshTokenForm = Body(...)):
-    user = await crypt_service.get_current_user(refresh_token_form.refresh_token, refresh=True)
+    user = await CryptoService.get_current_user(refresh_token_form.refresh_token, refresh=True)
     scopes = CryptoService.get_scopes_from_refresh(refresh_token_form.refresh_token)
     access_token_expires = timedelta(minutes=60)
 
-    new_access_token = crypt_service.create_access_token(
+    new_access_token = CryptoService.create_access_token(
         data={
             "sub": user.username,
             "scopes": scopes,

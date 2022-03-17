@@ -1,19 +1,19 @@
-from typing import List, Optional
+from typing import Optional
 
-from fastapi import APIRouter, Path, Security, status, Depends, Body
+from fastapi import Security, status, Depends, Body
 
-from src.dependencies import get_filters
-from src.dtos.viewmodels import (UserAdminViewModel,
-                                 CreatedUserAdminViewModel,
-                                 CreateUserRequestModel, UpdateUserRequestModel,
-                                 Response, Page, LoggedUser)
-from src.dtos.models import User, Filter
-from src.services.crypto import RoleAuth, adminRole, anyRole
-from src.services.service_adapter import UserService, PagingModel
+from src.dependencies import get_filters, get_user_from_request
+from src.dtos.viewmodels import (
+    UserAdminViewModel,
+    CreatedUserAdminViewModel,
+    CreateUserRequestModel, UpdateUserRequestModel,
+    Response, Page, LoggedUser
+)
+from src.dtos.models import User, PagingModel
+from src.services.crypto import adminRole, anyRole, CryptoService
 from .routers import ApiController
 
 router = ApiController(prefix="/user", tags=["Users"])
-service = UserService()
 
 
 @router.get('', response_model=Response[LoggedUser])
@@ -28,43 +28,45 @@ def get_user(user: LoggedUser = Security(anyRole, scopes=["users:read"])):
     return Response(data=user)
 
 
-@router.get('/admin/{id}', response_model=Response[UserAdminViewModel])
-async def get_user_as_admin(
-        id: str = Path(...),
-        user: LoggedUser = Security(adminRole, scopes=["users:read"])
-):
+@router.get(
+    '/admin/{id}',
+    response_model=Response[UserAdminViewModel],
+    dependencies=[Security(adminRole, scopes=["users:read"])]
+)
+async def get_user_as_admin(user: Optional[User] = Depends(get_user_from_request)):
     """
     Gets an user representation for displaying in a view in an admin
     view. This representation only gets displayed by if the logged in
     user is an admin and has read access over users.
     """
-    requested_user = await service.get(id)
-    if requested_user is None:
+    if user is None:
         return Response(status_code=status.HTTP_404_NOT_FOUND, message="User not found")
-    return Response(data=requested_user)
+    return Response(data=user)
 
 
-@router.get('/admin', response_model=Response[Page[UserAdminViewModel]])
-async def list_users_as_admin(
-        paging: PagingModel = Depends(),
-        filters: Optional[List[Filter]] = Depends(get_filters),
-        user: LoggedUser = Security(adminRole, scopes=["users:read"])
-):
+@router.get(
+    '/admin',
+    response_model=Response[Page[UserAdminViewModel]],
+    dependencies=[Security(adminRole, scopes=["users:read"])]
+)
+async def list_users_as_admin(paging: PagingModel = Depends(), filters: dict = Depends(get_filters)):
     """
     Gets the list of users with an extended field representation.
     This endpoint is meant for admins with read access over the
     users.
     """
-    users = await service.get(paging=paging, filters=filters)
-    total = await service.count()
+    filters = {f.field: f.value for f in filters}
+    users = await User.find(filters).skip(paging.skip).limit(paging.limit).to_list()
+    total = await User.find(filters).count()
     return Response(data=Page(items=users, total=total, records=len(users)))
 
 
-@router.post('/admin', response_model=Response[CreatedUserAdminViewModel])
-async def create_user_as_admin(
-        model: CreateUserRequestModel = Body(...),
-        user: LoggedUser = Security(adminRole, scopes=["users:write"])
-):
+@router.post(
+    '/admin',
+    response_model=Response[CreatedUserAdminViewModel],
+    dependencies=[Security(adminRole, scopes=["users:write"])]
+)
+async def create_user_as_admin(model: CreateUserRequestModel = Body(...)):
     """
     Creates a new user in the system. The caller of this
     endpoint must be an admin with write access privileges
@@ -75,42 +77,47 @@ async def create_user_as_admin(
     """
     data = model.dict(exclude_unset=True)
     # autogenerate a strong password
-    password = RoleAuth.generate_strong_password()
-    data['hashed_password'] = RoleAuth.get_password_hash(password)
-    _id = await service.add(data)
+    password = CryptoService.generate_strong_password()
+    data['hashed_password'] = CryptoService.get_password_hash(password)
+    user = await User(**data).insert()
     return Response(
-        data=CreatedUserAdminViewModel(id=_id, password=password),
+        data=CreatedUserAdminViewModel(id=user.id, password=password),
         status_code=status.HTTP_201_CREATED
     )
 
 
-@router.delete('/admin/{id}', response_model=Response[str])
-async def delete_user_as_admin(
-        id: str = Path(...),
-        user: LoggedUser = Security(adminRole, scopes=['users:delete'])
-):
+@router.delete(
+    '/admin/{id}',
+    response_model=Response[str],
+    dependencies=[Security(adminRole, scopes=['users:delete'])]
+)
+async def delete_user_as_admin(user: User = Depends(get_user_from_request)):
     """
     Deletes an user from the system. It requires "users:delete" permission
     and an admin Role
     """
-    if await service.delete(id):
-        return Response(message="Delete successfully", data=id, status_code=status.HTTP_202_ACCEPTED)
+    if user is not None:
+        if (await user.delete()).deleted_count == 1:
+            return Response(message="Delete successfully", data=id, status_code=status.HTTP_202_ACCEPTED)
 
-    return Response(message="User could not been deleted", status=status.HTTP_400_BAD_REQUEST)
+    return Response(message="User could not been deleted", status_code=status.HTTP_400_BAD_REQUEST)
 
 
-@router.put('/admin/{id}', response_model=Response[UserAdminViewModel])
+@router.patch(
+    '/admin/{id}',
+    response_model=Response[UserAdminViewModel],
+    dependencies=[Security(adminRole, scopes=['users:write'])]
+)
 async def update_user_as_admin(
-        id: str = Path(...),
+        user: Optional[User] = Depends(get_user_from_request),
         model: UpdateUserRequestModel = Body(...),
-        user: LoggedUser = Security(adminRole, scopes=['users:write'])
 ):
     """
     Updates an user information. Requires an admin with "users:write"
     permissions
     """
-    if await service.update(id, model.dict(exclude_unset=True)):
-        new_user = await service.get(id)
-        return Response(data=new_user, status_code=status.HTTP_201_CREATED)
+    if user is not None:
+        await user.set(model.dict(exclude_unset=True))
+        return Response(data=user, status_code=status.HTTP_201_CREATED)
 
     return Response(status_code=status.HTTP_400_BAD_REQUEST, message="Failed to update user")

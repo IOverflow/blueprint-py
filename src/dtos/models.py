@@ -1,5 +1,5 @@
-from bson.objectid import ObjectId
-from pydantic import BaseModel, Field
+from beanie import Document, PydanticObjectId
+from pydantic import BaseModel
 from typing import Optional, List, Union
 from src.inmutables import NomenclatureType
 import datetime
@@ -15,34 +15,14 @@ class Filter(BaseModel):
     value: Union[str, List[str]]
 
 
-class PyObjectId(ObjectId):
-    @classmethod
-    def __get_validators__(cls):
-        yield cls.validate
-
-    @classmethod
-    def validate(cls, oid):
-        if not ObjectId.is_valid(oid):
-            raise ValueError("Invalid objectid")
-        return cls(oid)
-
-    @classmethod
-    def __modify_schema__(cls, field_schema):
-        field_schema.update(type="string")
+PyObjectId = PydanticObjectId
 
 
 class BaseConfig:
     allow_population_by_field_name = True
     arbitrary_types_allowed = True
-    json_encoders = {ObjectId: str}
+    json_encoders = {PyObjectId: str}
     orm_mode = True
-
-
-class Entity(BaseModel):
-    id: PyObjectId = Field(default_factory=PyObjectId, alias="_id")
-
-    class Config(BaseConfig):
-        pass
 
 
 # ============================================  USER ZONE ==========================================
@@ -71,7 +51,7 @@ class Role(BaseModel):
     name: str
 
 
-class User(Entity):
+class User(Document):
     username: str
     hashed_password: str
     email: Optional[str] = None
@@ -79,6 +59,9 @@ class User(Entity):
     disabled: Optional[bool] = None
     scopes: List[str] = []
     roles: List[Role] = []
+
+    class Collection:
+        name = 'users'
 
     def is_in_role(self, role: str):
         return any(role == r.name for r in self.roles)
@@ -109,12 +92,15 @@ SCOPES = {
 
 # =============================  Nomenclatures  ====================================================
 
-class Nomenclature(Entity):
+class Nomenclature(Document):
     Name: str
     type: NomenclatureType
     pattern: Optional[str] = None
     description: Optional[str] = None
     level: Optional[int] = None
+
+    class Collection:
+        name = "nomenclature"
 
     @property
     def has_level(self):

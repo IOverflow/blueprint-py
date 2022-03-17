@@ -1,25 +1,33 @@
-from typing import List, Optional
+from typing import Optional
 
 from fastapi import Query
 
-from src.dtos.models import Filter
+from src.dtos.models import PyObjectId, Nomenclature, User
 
 
-def get_filters(filters: Optional[str] = Query(None)) -> List[Filter]:
+def get_filters(filters: Optional[str] = Query(None)) -> dict:
     if filters is None:
-        return []
+        return dict()
 
     try:
-        result: List[Filter] = []
+        result = dict()
         # filters are separeted by |
         filters_list = filters.split('|')
         for f in filters_list:
             # key and value are separated by :
             key, value = f.split(':')
             if ',' in value:
-                result.append(Filter(field=key, value=value.split(',')))
+                result[key] = value.split(',')
             else:
-                result.append(Filter(field=key, value=value))
+                result[key] = value
         return result
     except Exception as e:
-        return []
+        return dict()
+
+
+async def get_nomenclature(id: PyObjectId):
+    return await Nomenclature.get(id)
+
+
+async def get_user_from_request(id: PyObjectId):
+    return await User.get(id)

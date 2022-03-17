@@ -3,17 +3,17 @@ from typing import List, Optional
 
 from fastapi import Path, Security, Body, Depends, status
 
-from src.dependencies import get_filters
-from src.services.service_adapter import PagingModel, NomenclaturesService
-from src.dtos.viewmodels import (Response, NomenclatureForm, Page, NomenclatureViewModel,
-                                 NomenclatureTypeViewModel)
-from src.dtos.models import User, Filter
+from src.dependencies import get_filters, get_nomenclature
+from src.dtos.viewmodels import (
+    Response, NomenclatureForm, Page, NomenclatureViewModel,
+    NomenclatureTypeViewModel
+)
+from src.dtos.models import Nomenclature, PagingModel
 from src.services.crypto import adminRole, anyRole
 from src.inmutables import NomenclatureType
 from .routers import ApiController
 
 router = ApiController(prefix='/nomenclature', tags=['Nomenclature'])
-service = NomenclaturesService()
 
 
 def camel_case_split(identifier):
@@ -21,19 +21,19 @@ def camel_case_split(identifier):
     return [m.group(0) for m in matches]
 
 
-@router.get('', response_model=Response[Page[NomenclatureViewModel]])
-async def get_all_nomenclatures(
-        user: User = Security(adminRole, scopes=['nomenclature:read']),
-        paging: PagingModel = Depends(),
-        filters: Optional[List[Filter]] = Depends(get_filters)
-):
+@router.get(
+    '',
+    response_model=Response[Page[NomenclatureViewModel]],
+    dependencies=[Security(adminRole, scopes=['nomenclature:read'])]
+)
+async def get_all_nomenclatures(paging: PagingModel = Depends(), filters: dict = Depends(get_filters)):
     """
     Returns all nomenclatures defined on the system.
     This endpoint requires the Admin role and 'nomenclature:read'
     permission
     """
-    nomenclatures = await service.get(paging=paging, filters=filters)
-    total = await service.count(filters)
+    nomenclatures = await Nomenclature.find(filters).skip(paging.skip).limit(paging.limit).to_list()
+    total = await Nomenclature.find(filters).count()
     return Response(data=Page(items=nomenclatures, total=total, records=len(nomenclatures)))
 
 
@@ -55,82 +55,88 @@ def get_all_nomenclature_types():
                    } for e in NomenclatureType))
 
 
-@router.get('/{id}', response_model=Response[NomenclatureViewModel])
-async def get_nomenclature_by_id(
-        user: User = Security(adminRole, scopes=['nomenclature:read']),
-        id: str = Path(...)
-):
+@router.get(
+    '/{id}',
+    response_model=Response[NomenclatureViewModel],
+    dependencies=[Security(adminRole, scopes=['nomenclature:read'])]
+
+)
+async def get_nomenclature_by_id(nomenclature: Optional[Nomenclature] = Depends(get_nomenclature)):
     """
     Returns al the details of a nomenclature. This is useful for
     populating a form for editing the nomenclature.
     Requires an Admin role and 'nomenclature:read' permissions.
     """
-    nomenclature = await service.get(id=id)
     if nomenclature is None:
         return Response(status_code=status.HTTP_404_NOT_FOUND, message="Nomenclature not found")
 
     return Response(data=nomenclature)
 
 
-@router.get('/type/{nomenclature_type}', response_model=Response[Page[NomenclatureViewModel]])
-async def get_nomenclatures_by_type(
-        user: User = Security(anyRole, scopes=['nomenclature:read']),
-        nomenclature_type: NomenclatureType = Path(...)
-):
+@router.get(
+    '/type/{nomenclature_type}',
+    response_model=Response[Page[NomenclatureViewModel]],
+    dependencies=[Security(anyRole, scopes=['nomenclature:read'])]
+)
+async def get_nomenclatures_by_type(nomenclature_type: NomenclatureType = Path(...)):
     """
     Gets all nomenclatures that belongs to a specific type.
     This is useful for populating select boxes on entities
     that depends on a given nomenclature.
     Requires 'nomenclature:read' permission.
     """
-    nomenclatures = await service.get_nomenclatures_by_type(nomenclature_type)
-    total = await service.count([Filter(field='type', value='nomenclature_type')])
+    nomenclatures = await Nomenclature.find(Nomenclature.type_ == nomenclature_type).to_list()
+    total = await Nomenclature.find(Nomenclature.type_ == nomenclature_type).count()
     return Response(
         data=Page(items=nomenclatures, records=len(nomenclatures), total=total)
     )
 
 
-@router.delete('/{id}', response_model=Response[str])
-async def delete_nomenclature(
-        user: User = Security(adminRole, scopes=['nomenclature:delete']),
-        id: str = Path(...)
-):
+@router.delete(
+    '/{id}',
+    response_model=Response[Nomenclature],
+    dependencies=[Security(adminRole, scopes=['nomenclature:delete'])]
+)
+async def delete_nomenclature(nomenclature: Optional[Nomenclature] = Depends(get_nomenclature)):
     """
     Deletes a nomenclature from the system. It requires "users:delete" permission
     and an admin Role
     """
-    if await service.delete(id):
-        return Response(message="Delete successfully", data=id, status_code=status.HTTP_202_ACCEPTED)
+    if nomenclature is not None:
+        deleted = (await nomenclature.delete()).deleted_count == 1
+        if deleted:
+            return Response(message="Delete successfully", data=nomenclature, status_code=status.HTTP_202_ACCEPTED)
 
     return Response(message="Nomenclature could not been deleted", status_code=status.HTTP_400_BAD_REQUEST)
 
 
-@router.post('', response_model=Response[NomenclatureViewModel])
-async def create_nomenclature(
-        user: User = Security(adminRole, scopes=['nomenclature:write']),
-        model: NomenclatureForm = Body(...)
-):
+@router.post(
+    '',
+    response_model=Response[NomenclatureViewModel],
+    dependencies=[Security(adminRole, scopes=['nomenclature:write'])]
+)
+async def create_nomenclature(model: NomenclatureForm = Body(...)):
     """
     Creates a new nomenclature and returns the new object.
     Requires Admin role and 'nomenclature:write' permission.
     """
-    data = model.dict()
-    _id = await service.add(data)
-
-    return Response(data=await service.get(id=_id))
+    nomenclature = await Nomenclature(**model.dict(exclude_unset=True)).insert()
+    return Response(data=nomenclature)
 
 
-@router.put('/{id}', response_model=Response[NomenclatureViewModel])
+@router.patch(
+    '/{id}',
+    response_model=Response[NomenclatureViewModel],
+    dependencies=[Security(adminRole, scopes=['nomenclature:write'])]
+)
 async def update_nomenclature(
-        user: User = Security(adminRole, scopes=['nomenclature:write']),
-        id: str = Path(...),
+        nomenclature: Optional[Nomenclature] = Depends(get_nomenclature),
         model: NomenclatureForm = Body(...)
 ):
     """
     Updates the data collected in model to the Nomenclature
     represented by id. Requires Admin role and nomenclature:write permission
     """
-    data = model.dict(exclude_unset=True)
-    if await service.update(id, data):
-        new_nomenclature = await service.get(id=id)
-        return Response(status_code=status.HTTP_201_CREATED, data=new_nomenclature)
+    if nomenclature is not None:
+        await nomenclature.set(model.dict(exclude_unset=True))
+        return Response(status_code=status.HTTP_201_CREATED, data=nomenclature)

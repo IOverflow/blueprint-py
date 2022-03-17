@@ -1,12 +1,11 @@
 from passlib.context import CryptContext
 from fastapi.security import OAuth2PasswordBearer, SecurityScopes
-from src.dataaccess.repository.repository import UserRepository
 from typing import Optional, List
 from datetime import datetime, timedelta
 from jose import JWTError, jwt
 from decouple import config
 from fastapi import HTTPException, status, Depends
-from src.dtos.models import TokenData, SCOPES
+from src.dtos.models import TokenData, SCOPES, User
 from pydantic import ValidationError
 from random import sample, randint
 import string
@@ -14,14 +13,12 @@ import string
 from src.dtos.viewmodels import LoggedUser
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/account/token", scopes=SCOPES)
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/admin/account/token", scopes=SCOPES)
 
 
 class CryptoService:
     # Allow for Dependency Injection so we can test this
     # service without a database
-    def __init__(self, repo=UserRepository()):
-        self._user_repo = repo
 
     @staticmethod
     def generate_strong_password():
@@ -37,8 +34,9 @@ class CryptoService:
     def get_password_hash(password):
         return pwd_context.hash(password)
 
-    async def authenticate_user(self, username: str, password: str):
-        if (user := await self._user_repo.get_by_username(username)) is not None:
+    @staticmethod
+    async def authenticate_user(username: str, password: str):
+        if (user := await User.find_one(User.username == username)) is not None:
             if not CryptoService.verify_password(password, user.hashed_password):
                 return False
             return user
@@ -72,7 +70,8 @@ class CryptoService:
         scopes = payload.get('scopes') or []
         return scopes
 
-    async def get_current_user(self, token: str, refresh: bool = False):
+    @staticmethod
+    async def get_current_user(token: str, refresh: bool = False):
         credentials_exception = HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Could not validate credentials",
@@ -92,12 +91,12 @@ class CryptoService:
         except JWTError as e:
             raise credentials_exception
 
-        if (user := await self._user_repo.get_by_username(username=token_data.username)) is None:
+        if (user := await User.find_one(User.username == token_data.username)) is None:
             raise credentials_exception
         return user
 
 
-class RoleAuth(CryptoService):
+class RoleAuth:
     def __init__(self, allowed_roles: List[str] = None):
         super(RoleAuth, self).__init__()
         self.allowed_roles = allowed_roles

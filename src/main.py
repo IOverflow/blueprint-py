@@ -1,3 +1,4 @@
+from beanie import init_beanie
 from fastapi import FastAPI
 from src.controllers import health, account, user, nomenclature
 from src.config import config
@@ -5,7 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 origins = ['*']
 
-api = FastAPI(docs_url=None,
+api = FastAPI(docs_url="/api/v1/admin/swag-docs",
               redoc_url='/api/v1/admin/docs',
               openapi_url='/api/v1/admin/openapi.json',
               title="Admin Project API",
@@ -22,5 +23,12 @@ api.include_router(nomenclature.router, prefix='/api/v1/admin')
 
 
 @api.on_event("startup")
-def setup():
+async def setup():
     config()
+    from src.dataaccess.database import db
+    from src.dtos.models import User
+    from src.dtos.models import Nomenclature
+    await init_beanie(db, document_models=[
+        User,
+        Nomenclature
+    ])
